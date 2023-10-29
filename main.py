@@ -25,7 +25,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
 init_weigth = "/root/autodl-tmp/resnet50_a1_0-14fe96d1.pth"
-
+timm_model_name = "mobilevit_s"
+logger_name = "training2.log"
+save_model_name = "mobilevit_s-10-30.pt"
+batch_size = 8
 
 label_str2int = {
     'HGSC': 0,
@@ -71,19 +74,19 @@ class UBCDataset(Dataset):
 
 transforms = transforms.Compose(
     [
-        transforms.Resize((1024, 1024)),
-        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.Resize((512, 512)),
+        # transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
         transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
+            mean=[0.8721593659261734, 0.7799686061900686, 0.8644588534918227],
+            std=[0.08258995918115268, 0.10991684444009092, 0.06839816226731532],
         )
     ]
 )
 
 ubc_dataset = UBCDataset(csv_path , img_path, transforms)
 
-train_len = int(len(ubc_dataset) * 0.8)
+train_len = int(len(ubc_dataset) * 0.9)
 val_len = len(ubc_dataset) - train_len
 
 train_dataset, val_dataset = torch.utils.data.random_split(
@@ -93,41 +96,39 @@ train_dataset, val_dataset = torch.utils.data.random_split(
 
 train_dataloader = DataLoader(
     dataset=train_dataset,
-    batch_size=16,
+    batch_size=batch_size,
     shuffle=True,
     num_workers=0,
 )
 
 val_dataloader = DataLoader(
     dataset=val_dataset,
-    batch_size=16,
+    batch_size=batch_size,
     shuffle=True,
     num_workers=0
 )
 
 
-class UBCModel_ResNet50(nn.Module):
-    def __init__(self, img_size):
-        super(UBCModel_ResNet50, self).__init__()
+class UBCModel(nn.Module):
+    def __init__(self, model_name):
+        super(UBCModel, self).__init__()
         self.num_class = 5
         self.model = timm.create_model(
-            model_name="resnet18",
+            model_name=model_name,
             pretrained=None,
+            num_classes=5
         )
 
-        self.out_feature = self.model.fc.out_features
-        self.fc1 = nn.Linear(self.out_feature, self.out_feature // 2)
-        self.fc2 = nn.Linear(self.out_feature // 2, self.num_class)
-        self.softmax = nn.Softmax(dim=1)
-
-
+        #self.out_feature = self.model.fc.out_features
+        #self.fc1 = nn.Linear(self.out_feature, self.out_feature // 2)
+        #self.fc2 = nn.Linear(self.out_feature // 2, self.num_class)
+        #self.linear = nn.Linear(self.out_feature, self.num_class)
 
     def forward(self, x):
         x = self.model(x)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        x = self.softmax(x)
-
+        #x = self.fc1(x)
+        #x = self.fc2(x)
+        #x = self.linear(x)
 
         return x
 
@@ -135,15 +136,16 @@ class UBCModel_ResNet50(nn.Module):
 
 
 # 训练
-model = UBCModel_ResNet50(1024)
+model = UBCModel(timm_model_name)
 model = model.to('cuda')
 # model.load_state_dict(torch.load(init_weigth))
 
 loss_fn = nn.CrossEntropyLoss()
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
-save_model_name = "resnet-10-29.pt"
+optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
+
+
 num_epochs = 300
 
 print(f'device {device}')
@@ -153,7 +155,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler('training3.log'),
+        logging.FileHandler(logger_name),
         logging.StreamHandler()
     ]
 )

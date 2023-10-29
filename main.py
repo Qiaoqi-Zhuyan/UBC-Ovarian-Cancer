@@ -26,9 +26,10 @@ img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
 init_weigth = "/root/autodl-tmp/resnet50_a1_0-14fe96d1.pth"
 timm_model_name = "mobilevit_s"
-logger_name = "training2.log"
-save_model_name = "mobilevit_s-10-30.pt"
-batch_size = 8
+logger_name = "training4.log"
+save_model_name = "mobilevit_s-10-30-epoch150.pt"
+batch_size = 16
+epoch_num = 150
 
 label_str2int = {
     'HGSC': 0,
@@ -146,7 +147,7 @@ loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
 
 
-num_epochs = 300
+num_epochs = epoch_num
 
 print(f'device {device}')
 print(f'train launch')

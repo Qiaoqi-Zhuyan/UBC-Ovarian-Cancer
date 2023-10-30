@@ -24,12 +24,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
-timm_model_name = "fastvit_s12"
-logger_name = "training17.log"
-save_model_name = "fastvit_s12-10-30-epoch100.pt"
+timm_model_name = "convnext_tiny"
+logger_name = "training18.log"
+save_model_name = "convnext_tiny-10-30-epoch100.pt"
 batch_size = 16
 epoch_num = 100
 lr = 1e-3
+img_size = (512, 512)
 
 label_str2int = {
     'HGSC': 0,

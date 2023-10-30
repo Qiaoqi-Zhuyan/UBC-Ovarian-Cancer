@@ -24,12 +24,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
-init_weigth = "/root/autodl-tmp/resnet50_a1_0-14fe96d1.pth"
-timm_model_name = "mobilevit_s"
-logger_name = "training4.log"
-save_model_name = "mobilevit_s-10-30-epoch150.pt"
+timm_model_name = "fastvit_s12"
+logger_name = "training17.log"
+save_model_name = "fastvit_s12-10-30-epoch100.pt"
 batch_size = 16
-epoch_num = 150
+epoch_num = 100
+lr = 1e-6
 
 label_str2int = {
     'HGSC': 0,
@@ -143,8 +143,8 @@ model = model.to('cuda')
 
 loss_fn = nn.CrossEntropyLoss()
 
-
-optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
+# moblienet_s 100epochs lr=0.00001
+optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 
 num_epochs = epoch_num
@@ -162,6 +162,15 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger('training_logger')
+
+
+
+logger.info(f'backbone: {timm_model_name}, '
+            f'logger: {logger_name}, '
+            f'batch_size: {batch_size}, '
+            f'epochs: {epoch_num},'
+            f'lr: {lr},'
+            f'weghts: {save_model_name}')
 
 for epoch in range(num_epochs):
     for batch, (x, y) in enumerate(train_dataloader):

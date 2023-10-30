@@ -29,7 +29,7 @@ logger_name = "training17.log"
 save_model_name = "fastvit_s12-10-30-epoch100.pt"
 batch_size = 16
 epoch_num = 100
-lr = 1e-6
+lr = 1e-3
 
 label_str2int = {
     'HGSC': 0,

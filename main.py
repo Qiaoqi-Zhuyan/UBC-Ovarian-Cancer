@@ -22,16 +22,19 @@ import logging
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# hyper parameters
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
-timm_model_name = "convnext_tiny"
-logger_name = "training18.log"
-save_model_name = "convnext_tiny-10-30-epoch100.pt"
+timm_model_name = "mobilevit_s"
+logger_name = "training21.log"
+save_model_name = "mobilevit_s-10-30-epoch200-ver2.pt"
 batch_size = 16
-epoch_num = 100
-lr = 1e-3
+epoch_num = 150
+lr = 1e-2
 img_size = (512, 512)
+use_xavier_init = False
 
+# label transform
 label_str2int = {
     'HGSC': 0,
     'EC': 1,
@@ -40,7 +43,7 @@ label_str2int = {
     'MC': 4
 }
 
-
+# dataset
 class UBCDataset(Dataset):
     def __init__(self, csv_path, imgs_path, transforms=None):
         self.csv_path = csv_path
@@ -110,7 +113,7 @@ val_dataloader = DataLoader(
     num_workers=0
 )
 
-
+# model create
 class UBCModel(nn.Module):
     def __init__(self, model_name):
         super(UBCModel, self).__init__()
@@ -134,11 +137,21 @@ class UBCModel(nn.Module):
 
         return x
 
-
+def init_weights_xavier(model):
+    if isinstance(model, nn.Conv2d) or isinstance(model, nn.Linear):
+        nn.init.xavier_uniform_(model.weight)
+        if model.bias is not None:
+            nn.init.zeros_(model.bias)
 
 
 # 训练
 model = UBCModel(timm_model_name)
+
+if use_xavier_init:
+    model.apply(init_weights_xavier)
+
+
+
 model = model.to('cuda')
 # model.load_state_dict(torch.load(init_weigth))
 
@@ -171,7 +184,8 @@ logger.info(f'backbone: {timm_model_name}, '
             f'batch_size: {batch_size}, '
             f'epochs: {epoch_num},'
             f'lr: {lr},'
-            f'weghts: {save_model_name}')
+            f'weghts: {save_model_name},'
+            f'use_xavier_init: {use_xavier_init}')
 
 for epoch in range(num_epochs):
     for batch, (x, y) in enumerate(train_dataloader):

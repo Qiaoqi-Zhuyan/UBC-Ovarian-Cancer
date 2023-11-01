@@ -112,6 +112,9 @@
           <mappings>
             <mapping deploy="/root/autodl-tmp/ovarian-caner-ubc" local="$PROJECT_DIR$" />
           </mappings>
+          <excludedPaths>
+            <excludedPath path="/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth" />
+          </excludedPaths>
         </serverdata>
       </paths>
       <paths name="root@region-31.seetacloud.com:30390 password">

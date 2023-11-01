@@ -1,4 +1,6 @@
 import os
+import random
+
 import numpy as np
 import pandas as pd
 from PIL import Image
@@ -25,14 +27,21 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # hyper parameters
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
-timm_model_name = "mobilevit_s"
-logger_name = "training21.log"
-save_model_name = "mobilevit_s-10-30-epoch200-ver2.pt"
+
+
+use_init_weights = False
+weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
+
+epoch_num = 50
+timm_model_name = "mobilevit_xs"
+logger_name = "training33.log"
+save_model_name = f"mobilevit_s-11-1-epoch{epoch_num}-init-ver3.pt"
 batch_size = 16
-epoch_num = 150
-lr = 1e-2
+lr = 1e-4
 img_size = (512, 512)
 use_xavier_init = False
+weight_decay = 1e-4
+
 
 # label transform
 label_str2int = {
@@ -42,6 +51,16 @@ label_str2int = {
     'LGSC': 3,
     'MC': 4
 }
+
+
+random_seed = 42
+random.seed(random_seed)
+torch.manual_seed(random_seed)
+
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(random_seed)
+    torch.cuda.manual_seed_all(random_seed)
+
 
 # dataset
 class UBCDataset(Dataset):
@@ -77,11 +96,55 @@ class UBCDataset(Dataset):
         return self.imgs[idx], self.labels[idx]
 
 
+
+class UBCDataset_arg(Dataset):
+    def __init__(self, csv_path, imgs_path, transforms=None):
+        self.csv_path = csv_path
+        self.imgs_path = imgs_path
+        self.transform = transforms
+        self.df = pd.read_csv(csv_path)
+
+        self.imgs = []
+        self.labels = []
+
+        for idx, row in self.df.iterrows():
+            img_id = row['image_id']
+            is_tma = row['is_tma']
+            label = row["label"]
+            img_file_path = os.path.join(self.imgs_path, str(img_id) + '_thumbnail.png')
+            if os.path.isfile(img_file_path):
+                img = Image.open(img_file_path).convert('RGB')
+                label_int = label_str2int[f'{label}']
+                # img = cv2.imread(img_file_path)
+                # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                if self.transform:
+                    img = self.transform(img)
+
+                self.imgs.append(img)
+                self.labels.append(label_int)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return self.imgs[idx], self.labels[idx]
+
+    def spilt_dataset(self, dataset):
+        train_len = int(len(ubc_dataset) * 0.9)
+        val_len = len(ubc_dataset) - train_len
+
+        train_dataset, val_dataset = torch.utils.data.random_split(
+            ubc_dataset, [train_len, val_len]
+        )
+
+
 transforms = transforms.Compose(
     [
         transforms.Resize((512, 512)),
-        # transforms.RandomHorizontalFlip(p=0.5),
+        #transforms.RandomHorizontalFlip(p=0.5),
+        #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         transforms.ToTensor(),
+        #transforms.Lambda(lambda x: x + torch.randn_like(x) * 0.1),
         transforms.Normalize(
             mean=[0.8721593659261734, 0.7799686061900686, 0.8644588534918227],
             std=[0.08258995918115268, 0.10991684444009092, 0.06839816226731532],
@@ -90,6 +153,8 @@ transforms = transforms.Compose(
 )
 
 ubc_dataset = UBCDataset(csv_path , img_path, transforms)
+
+
 
 train_len = int(len(ubc_dataset) * 0.9)
 val_len = len(ubc_dataset) - train_len
@@ -124,6 +189,7 @@ class UBCModel(nn.Module):
             num_classes=5
         )
 
+
         #self.out_feature = self.model.fc.out_features
         #self.fc1 = nn.Linear(self.out_feature, self.out_feature // 2)
         #self.fc2 = nn.Linear(self.out_feature // 2, self.num_class)
@@ -139,13 +205,31 @@ class UBCModel(nn.Module):
 
 def init_weights_xavier(model):
     if isinstance(model, nn.Conv2d) or isinstance(model, nn.Linear):
-        nn.init.xavier_uniform_(model.weight)
+        nn.init.kaiming_uniform_(model.weight)
         if model.bias is not None:
             nn.init.zeros_(model.bias)
 
 
+
+class UBCModel_init(nn.Module):
+    def __init__(self, model_name, weights_path):
+        super(UBCModel_init, self).__init__()
+        self.model_ = timm.create_model(
+            model_name=model_name,
+            pretrained=None
+        )
+        self.model_.load_state_dict(torch.load(weights_path))
+        self.classifier = nn.Linear(1000, 5)
+    def forward(self, x):
+        return self.classifier(self.model_(x))
+
 # 训练
-model = UBCModel(timm_model_name)
+
+if use_init_weights:
+    model = UBCModel_init(timm_model_name, weights_path)
+else:
+    model = UBCModel(timm_model_name)
+
 
 if use_xavier_init:
     model.apply(init_weights_xavier)
@@ -158,7 +242,7 @@ model = model.to('cuda')
 loss_fn = nn.CrossEntropyLoss()
 
 # moblienet_s 100epochs lr=0.00001
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
 
 num_epochs = epoch_num
@@ -185,7 +269,11 @@ logger.info(f'backbone: {timm_model_name}, '
             f'epochs: {epoch_num},'
             f'lr: {lr},'
             f'weghts: {save_model_name},'
-            f'use_xavier_init: {use_xavier_init}')
+            f'use_xavier_init: {use_xavier_init},'
+            f'transforms: {transforms},'
+            f'use_init_weights {use_init_weights}，'
+            f'weight_decay {weight_decay}'
+            )
 
 for epoch in range(num_epochs):
     for batch, (x, y) in enumerate(train_dataloader):

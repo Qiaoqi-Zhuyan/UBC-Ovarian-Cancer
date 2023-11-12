@@ -210,7 +210,7 @@ class Attention(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, in_channel, out_channel, img_size, heads=8, head_channel=32, downsample=False, dropout=0.0):
+    def __init__(self, in_channel, out_channel, img_size, heads=8, head_channel=32, downsample=True, dropout=0.0):
         super(Transformer, self).__init__()
 
         self.img_w, self.img_h = img_size
@@ -302,9 +302,30 @@ class CoAtNet(nn.Module):
         self.fc = nn.Linear(channel[-1], num_classes, bias=False)
 
     def forward(self, x):
-        x = self.s_4(self.s_3(self.s_2(self.s_1(self.s_0(x)))))
-        x = self.avg_pool(x).view(-1, x.shape[1])
-        x = self.fc(x)
+        #x = self.s_4(self.s_3(self.s_2(self.s_1(self.s_0(x)))))
+        #x = self.avg_pool(x).view(-1, x.shape[1])
+        #x = self.fc(x)
+
+        x_0 = self.s_0(x)
+        print(f'x_0: {x_0.shape}')
+
+        x_1 = self.s_1(x_0)
+        print(f'x_1: {x_1.shape}')
+
+        x_2 = self.s_2(x_1)
+        print(f'x_2: {x_2.shape}')
+
+        x_3 = self.s_3(x_2)
+        print(f'x_3: {x_3.shape}')
+
+        x_4 = self.s_4(x_3)
+        print(f'x_4: {x_4.shape}')
+
+        x_5 = self.avg_pool(x_4).view(-1, x_4.shape[1])
+        print(f'x_5: {x_5.shape}')
+
+        x_6 = self.fc(x_5)
+        print(f'x_6: {x_6.shape}')
 
         return x
 
@@ -322,8 +343,6 @@ class CoAtNet(nn.Module):
 
 '''
     def __init__(self, img_size, in_channel, num_blocks, channel, num_classes,):
-
-
 '''
 
 def coatnet_0(img_size, num_classes=5):
@@ -367,4 +386,4 @@ if __name__ == '__main__':
 
     out = model(img)
 
-    print(out.shape, count_parameters(model))
+    #print(out.shape, count_parameters(model))

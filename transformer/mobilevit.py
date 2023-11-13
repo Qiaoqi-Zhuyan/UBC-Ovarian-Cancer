@@ -1,3 +1,9 @@
+'''
+copy from https://github.com/chinhsuanwu/mobilevit-pytorch/blob/master/mobilevit.py
+'''
+
+
+
 import torch
 from torch import nn
 import einops
@@ -77,10 +83,94 @@ class Attention(nn.Module):
         return self.out(out)
 
 class Transformer(nn.Module):
-    def __init__(self, in_channel, depth, heads, head_dim, hidden_dim, drop=0.0):
+    def __init__(self, in_channel, depth, heads, head_dim, hidden_dim, attn_drop=0.0, ffn_drop=0.0):
         super(Transformer, self).__init__()
         self.layers = nn.ModuleList([])
+        """
+        class Attention(nn.Module):
+            def __init__(self, dim, heads=8, head_dim=64, dropout=0.0):
+        """
         for _ in range(depth):
             self.layers.append(nn.ModuleList([
-
+                nn.LayerNorm(dim=in_channel),
+                Attention(in_channel, heads, head_dim, attn_drop),
+                nn.LayerNorm(dim=in_channel),
+                Feedforward(in_channel, hidden_dim, ffn_drop)
             ]))
+
+
+    def forward(self, x):
+        for attn, ffn in self.layers:
+
+            x = attn(x) + x
+            x = ffn(x) + x
+
+        return x
+
+class MV2Block(nn.Module):
+    def __init__(self, in_channel, out_channel, stride=1, expansion=4):
+        super(MV2Block, self).__init__()
+        self.stride = stride
+        self.expansion = expansion
+        assert stride in [1, 2]
+
+        hidden_dim = int(in_channel * expansion)
+
+        if expansion == 1:
+            # dw
+            self.conv1 = nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False)
+            self.bn1 = nn.BatchNorm2d(hidden_dim)
+            self.act1 = nn.SiLU()
+            # pw
+            self.conv2 = nn.Conv2d(hidden_dim, out_channel, 1, 1, 0, bias=False)
+            self.bn2 = nn.BatchNorm2d(out_channel)
+
+        else:
+            # pw
+            self.conv1 = nn.Conv2d(in_channel, hidden_dim, 1, 1, 0, bias=False)
+            self.bn1 = nn.BatchNorm2d(hidden_dim)
+            self.act1 = nn.SiLU()
+
+            # dw
+            self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, 3, stride, 1, groups=hidden_dim, bias=False)
+            self.bn2 = nn.BatchNorm2d(hidden_dim)
+            self.act2 = nn.SiLU()
+
+            # pw ->
+            self.conv3 = nn.Conv2d(hidden_dim, out_channel, 1, 1, 0, bias=False)
+            self.bn3 = nn.BatchNorm2d(out_channel)
+
+    def forward(self, x):
+        res = x
+        if self.expansion == 1:
+            # pw
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.act1(x)
+
+            # dw
+            x = self.conv2(x)
+            x = self.bn2(x)
+
+            return x + res
+
+        else:
+            # pw
+            x = self.conv1(x)
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.act1(x)
+
+            # dw
+            x = self.conv2(x)
+            x = self.bn2(x)
+            x = self.act2(x)
+
+            # linear
+            x = self.conv3(x)
+            x = self.bn3(x)
+
+            return res + x
+
+
+

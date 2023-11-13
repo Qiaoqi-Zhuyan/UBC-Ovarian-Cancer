@@ -65,6 +65,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\UBC-Ovarian-Cancer\UBC-Ovarian-Cancer\tool" />
       <recent name="E:\UBC-Ovarian-Cancer\UBC-Ovarian-Cancer\tools" />
       <recent name="E:\UBC-Ovarian-Cancer\UBC-Ovarian-Cancer\transformer" />
       <recent name="E:\UBC-Ovarian-Cancer\UBC-Ovarian-Cancer\cnn" />
@@ -84,7 +85,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/aug_dataset_val.py" />
+      <option name="SCRIPT_NAME" value="E:\UBC-Ovarian-Cancer\UBC-Ovarian-Cancer\tool\aug_dataset_val.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -215,7 +216,7 @@
       <workItem from="1699769635682" duration="2542000" />
       <workItem from="1699781118262" duration="906000" />
       <workItem from="1699789218770" duration="17024000" />
-      <workItem from="1699855771330" duration="8826000" />
+      <workItem from="1699855771330" duration="11442000" />
     </task>
     <servers />
   </component>

@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 
 df = pd.read_csv("train.csv")
 img_path = "train_thumbnails/"
-csv_path = "train.csv"''
+csv_path = "train.csv"
 
 
 cnt = 0

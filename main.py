@@ -2,9 +2,7 @@ import os
 import random
 
 import numpy as np
-import pandas as pd
 from PIL import Image
-import timm
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 import pandas as pd
@@ -15,14 +13,15 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import timm
 
-import torchvision
 import torchvision.transforms as transforms
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.preprocessing import LabelEncoder
 
 import logging
 import datetime
+
+from tqdm import tqdm
+import time
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,6 +30,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
 
+aug_img_path = {
+    "origin-imgs" :  "/root/autodl-tmp/train_thumbnails",
+    "augs-imgs" : "/root/autodl-tmp/train_thumbnails_augs"
+}
 
 use_init_weights = False
 weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
@@ -38,13 +41,17 @@ weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
 epoch_num = 50
 timm_model_name = "mobilevit_xs"
 #logger_name = "training38.log"
-logger_name = f"{timm_model_name}-{datetime.date.today()}-ver3.log"
-save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
+version = 3
 batch_size = 16
 lr = 1e-5
 img_size = (512, 512)
 use_xavier_init = False
 weight_decay = 1e-4
+
+
+logger_name = f"{timm_model_name}-{datetime.date.today()}-ver{version}.log"
+save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
+
 
 # label transform
 label_str2int = {
@@ -100,7 +107,8 @@ class UBCDataset(Dataset):
         return self.imgs[idx], self.labels[idx]
 
 
-'''def read_dataset(csv_path, imgs_path, transforms):
+'''
+def read_dataset(csv_path, imgs_path, transforms):
     imgs = []
     labels = []
     df = pd.read_csv(csv_path)
@@ -154,6 +162,64 @@ class UBCDataset_lebels(Dataset):
     def __getitem__(self, idx):
         return self.imgs[idx], self.labels[idx]
 
+
+
+
+# dataset
+class UBCDataset_augs(Dataset):
+    def __init__(self, csv_path, augs_imgs_dict, transforms=None):
+        self.csv_path = csv_path
+        self.origin_imgs_path = augs_imgs_dict["origin-imgs"]
+        self.augs_imgs_path = augs_imgs_dict["augs-imgs"]
+        self.transform = transforms
+        self.df = pd.read_csv(csv_path)
+        self.augs_imgs_num = 5
+
+        self.imgs = []
+        self.labels = []
+
+        for idx, row in self.df.iterrows():
+            img_id = row['image_id']
+            is_tma = row['is_tma']
+            label = row["label"]
+
+            print(f"process image id: {img_id}, label: {label}")
+
+            origin_imgs_file = os.path.join(self.origin_imgs_path, str(img_id) + '_thumbnail.png')
+            if os.path.isfile(origin_imgs_file):
+                img = Image.open(origin_imgs_file).convert('RGB')
+                label_int = label_str2int[f'{label}']
+                # img = cv2.imread(img_file_path)
+                # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                if self.transform:
+                    img = self.transform(img)
+
+                self.imgs.append(img)
+                self.labels.append(label_int)
+
+            for i in range(self.augs_imgs_num):
+                for j in range(self.augs_imgs_num):
+                    augs_imgs_file = os.path.join(self.augs_imgs_path, str(img_id) + "_thumbnail" + f"_trans{j + 1}" + f"_{i + 1}.png")
+                    if os.path.isfile(augs_imgs_file):
+                        img = Image.open(augs_imgs_file).convert('RGB')
+                        label_int = label_str2int[f'{label}']
+                        # img = cv2.imread(img_file_path)
+                        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        if self.transform:
+                            img = self.transform(img)
+
+                        self.imgs.append(img)
+                        self.labels.append(label_int)
+
+        print("Dataset process finish")
+
+
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return self.imgs[idx], self.labels[idx]
 
 transforms = transforms.Compose(
     [
@@ -320,10 +386,6 @@ logging.basicConfig(
 
 logger = logging.getLogger('training_logger')
 
-
-
-
-
 logger.info(f'backbone: {timm_model_name}, '
             f'logger: {logger_name}, '
             f'batch_size: {batch_size}, '
@@ -336,6 +398,8 @@ logger.info(f'backbone: {timm_model_name}, '
             f'weight_decay {weight_decay}'
             )
 
+
+'''
 for epoch in range(num_epochs):
     for batch, (x, y) in enumerate(train_dataloader):
         x = x.to('cuda')
@@ -377,5 +441,77 @@ for epoch in range(num_epochs):
             if batch % 10 == 0:
                 print(f'Epoch: {epoch}, Accuracy: {100 * correct / total}%, balance accuracy: {balanced_accuracy * 100}%')
                 logger.info(f'Epoch: {epoch}, Accuracy: {100 * correct / total}%, balance accuracy: {balanced_accuracy * 100}%')
+'''
+
+def train():
+    for epoch in range(num_epochs):
+
+        train_correct = 0
+        train_total = 0
+        train_loss_sum = 0
+
+        model.train()
+        with tqdm(train_dataloader, unit="batch") as t:
+            for x, y in t:
+                t.set_description(f"Epoch [{epoch} / {epoch_num}]")
+                x = x.to('cuda')
+                y = y.to('cuda')
+
+                y_pred = model(x)
+                loss = loss_fn(y_pred, y)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+                with torch.no_grad():
+                    y_ = torch.argmax(y_pred, dim=1)
+                    train_correct += (y_ == y).sum().item()
+                    train_total += y.size(0)
+                    train_loss_sum += loss.item
+                    training_loss = train_loss_sum / train_total
+                    training_acc = train_correct / train_total
+
+                    y = y.to('cpu')
+                    y_ = y_.to('cpu')
+                    training_balanced_accuracy = '{:.4f}'.format(balanced_accuracy_score(y, y_))
+
+                t.set_postfix(loss=training_loss, training_acc=training_acc, training_BA=training_balanced_accuracy)
+                logger.info(f'Train:'
+                            f'Epoch: [{epoch} / {epoch_num}, '
+                            f'Training Loss: {training_loss}, '
+                            f'Training Accuracy: {training_acc},'
+                            f'Training Balanced Accuracy: {training_balanced_accuracy}')
+                torch.save(model, save_model_name)
+
+                val_correct = 0
+                val_total = 0
+
+                model.eval()
+                with torch.no_grad():
+                    t2 = tqdm(val_dataloader, desc="Val")
+                    for x, y in t2:
+                        x = x.to('cuda')
+                        y = y.to('cuda')
+                        y_p = model(x)
+                        # _, pred = torch.max(y_p, 1)
+                        pred = torch.argmax(y_p, dim=1)
+
+                        val_total += y.size(0)
+                        val_correct += (pred == y).sum().item()
+                        val_acc = '{:.4f}'.format(val_correct / val_total)
+
+                        y = y.to('cpu')
+                        pred = pred.to('cpu')
+                        balanced_accuracy = '{:.4f}'.format(balanced_accuracy_score(y, pred))
+
+                        t2.set_postfix(val_acc=val_acc, val_BA=balanced_accuracy)
+
+                        logger.info(f'Val:'
+                                    f'Epoch: [{epoch} / {epoch_num}, '
+                                    f'Val Accuracy: {val_acc},'
+                                    f'val Balanced Accuracy: {balanced_accuracy}')
 
 
+if __name__ == "__main__":
+    train()

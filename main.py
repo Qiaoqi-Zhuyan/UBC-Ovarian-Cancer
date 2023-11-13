@@ -36,13 +36,13 @@ use_init_weights = False
 weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
 
 epoch_num = 50
-timm_model_name = "efficientnet_b0"
+timm_model_name = "mobilevit_xs"
 #logger_name = "training38.log"
-logger_name = f"{timm_model_name}-{datetime.date.today()}-ver1.log"
+logger_name = f"{timm_model_name}-{datetime.date.today()}-ver3.log"
 save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
-batch_size = 8
-lr = 2e-4
-img_size = (1024, 1024)
+batch_size = 16
+lr = 1e-5
+img_size = (512, 512)
 use_xavier_init = False
 weight_decay = 1e-4
 
@@ -54,9 +54,6 @@ label_str2int = {
     'LGSC': 3,
     'MC': 4
 }
-
-
-
 
 def set_seed(seed=42):
     np.random.seed(seed)
@@ -224,19 +221,19 @@ class UBCModel(nn.Module):
         self.model = timm.create_model(
             model_name=model_name,
             pretrained=None,
-            #num_classes=5
+            num_classes=5
         )
-        in_features = self.model.classifier.in_features
-        self.model.classifier = nn.Identity()
-        self.model.global_pool = nn.Identity()
-        self.pooling = GeM()
-        self.classifier = nn.Linear(in_features, self.num_class)
+        #in_features = self.model.classifier.in_features
+        #self.model.classifier = nn.Identity()
+        #self.model.global_pool = nn.Identity()
+        #self.pooling = GeM()
+        #self.classifier = nn.Linear(in_features, self.num_class)
 
 
     def forward(self, x):
         x = self.model(x)
-        x = self.pooling(x).flatten(1)
-        x = self.classifier(x)
+        #x = self.pooling(x).flatten(1)
+        #x = self.classifier(x)
 
         return x
 
@@ -370,7 +367,8 @@ for epoch in range(num_epochs):
                 x = x.to('cuda')
                 y = y.to('cuda')
                 y_p = model(x)
-                _, pred = torch.max(y_p, 1)
+                #_, pred = torch.max(y_p, 1)
+                pred = torch.argmax(y_p, dim=1)
                 total += y.size(0)
                 correct += (pred == y).sum().item()
                 y = y.to('cpu')

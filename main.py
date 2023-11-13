@@ -21,8 +21,7 @@ import logging
 import datetime
 
 from tqdm import tqdm
-import time
-
+from transformer.mobilevit import mobilevit_xs
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -31,8 +30,8 @@ img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
 
 aug_img_path = {
-    "origin-imgs" :  "/root/autodl-tmp/train_thumbnails",
-    "augs-imgs" : "/root/autodl-tmp/train_thumbnails_augs"
+    "origin-imgs": "/root/autodl-tmp/train_thumbnails",
+    "augs-imgs": "/root/autodl-tmp/train_thumbnails_augs"
 }
 
 use_init_weights = False
@@ -40,7 +39,7 @@ weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
 
 epoch_num = 50
 timm_model_name = "mobilevit_xs"
-#logger_name = "training38.log"
+# logger_name = "training38.log"
 version = 3
 batch_size = 16
 lr = 1e-5
@@ -48,10 +47,8 @@ img_size = (512, 512)
 use_xavier_init = False
 weight_decay = 1e-4
 
-
 logger_name = f"{timm_model_name}-{datetime.date.today()}-ver{version}.log"
 save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
-
 
 # label transform
 label_str2int = {
@@ -62,6 +59,7 @@ label_str2int = {
     'MC': 4
 }
 
+
 def set_seed(seed=42):
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -71,7 +69,9 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
     os.environ['PYTHONHASHSEED'] = str(seed)
 
+
 set_seed(42)
+
 
 # dataset
 class UBCDataset(Dataset):
@@ -122,9 +122,8 @@ def read_dataset(csv_path, imgs_path, transforms):
             img = transforms(img)
 '''
 
-
-
 label_encoder = LabelEncoder()
+
 
 class UBCDataset_lebels(Dataset):
     def __init__(self, csv_path, imgs_path, transforms=None):
@@ -143,13 +142,12 @@ class UBCDataset_lebels(Dataset):
             img_file_path = os.path.join(self.imgs_path, str(img_id) + '_thumbnail.png')
             if os.path.isfile(img_file_path):
                 img = Image.open(img_file_path).convert('RGB')
-                #label_int = label_str2int[f'{label}']
+                # label_int = label_str2int[f'{label}']
                 # img = cv2.imread(img_file_path)
                 # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 if self.transform:
                     img = self.transform(img)
-                    #label = torch.tensor(label)
-
+                    # label = torch.tensor(label)
 
                 self.imgs.append(img)
                 self.labels.append(label)
@@ -161,8 +159,6 @@ class UBCDataset_lebels(Dataset):
 
     def __getitem__(self, idx):
         return self.imgs[idx], self.labels[idx]
-
-
 
 
 # dataset
@@ -178,13 +174,10 @@ class UBCDataset_augs(Dataset):
         self.imgs = []
         self.labels = []
 
-        for idx, row in self.df.iterrows():
+        for idx, row in tqdm(self.df.iterrows()):
             img_id = row['image_id']
             is_tma = row['is_tma']
             label = row["label"]
-
-            print(f"process image id: {img_id}, label: {label}")
-
             origin_imgs_file = os.path.join(self.origin_imgs_path, str(img_id) + '_thumbnail.png')
             if os.path.isfile(origin_imgs_file):
                 img = Image.open(origin_imgs_file).convert('RGB')
@@ -199,7 +192,8 @@ class UBCDataset_augs(Dataset):
 
             for i in range(self.augs_imgs_num):
                 for j in range(self.augs_imgs_num):
-                    augs_imgs_file = os.path.join(self.augs_imgs_path, str(img_id) + "_thumbnail" + f"_trans{j + 1}" + f"_{i + 1}.png")
+                    augs_imgs_file = os.path.join(self.augs_imgs_path,
+                                                  str(img_id) + "_thumbnail" + f"_trans{j + 1}" + f"_{i + 1}.png")
                     if os.path.isfile(augs_imgs_file):
                         img = Image.open(augs_imgs_file).convert('RGB')
                         label_int = label_str2int[f'{label}']
@@ -213,20 +207,16 @@ class UBCDataset_augs(Dataset):
 
         print("Dataset process finish")
 
-
-
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
         return self.imgs[idx], self.labels[idx]
 
+
 transforms = transforms.Compose(
     [
         transforms.Resize(img_size),
-        #transforms.RandomHorizontalFlip(p=0.5),
-        #transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        #transforms.Lambda(lambda x: x + torch.randn_like(x) * 0.1),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -236,15 +226,15 @@ transforms = transforms.Compose(
     ]
 )
 
-ubc_dataset = UBCDataset(csv_path , img_path, transforms)
+# ubc_dataset = UBCDataset(csv_path , img_path, transforms)
+ubc_dataset = UBCDataset_augs(csv_path, aug_img_path, transforms)
 
-train_len = int(len(ubc_dataset) * 0.9)
+train_len = int(len(ubc_dataset) * 0.8)
 val_len = len(ubc_dataset) - train_len
 
 train_dataset, val_dataset = torch.utils.data.random_split(
     ubc_dataset, [train_len, val_len]
 )
-
 
 train_dataloader = DataLoader(
     dataset=train_dataset,
@@ -286,22 +276,22 @@ class UBCModel(nn.Module):
         self.num_class = 5
         self.model = timm.create_model(
             model_name=model_name,
-            pretrained=None,
+            pretrained=False,
             num_classes=5
         )
-        #in_features = self.model.classifier.in_features
-        #self.model.classifier = nn.Identity()
-        #self.model.global_pool = nn.Identity()
-        #self.pooling = GeM()
-        #self.classifier = nn.Linear(in_features, self.num_class)
-
+        # in_features = self.model.classifier.in_features
+        # self.model.classifier = nn.Identity()
+        # self.model.global_pool = nn.Identity()
+        # self.pooling = GeM()
+        # self.classifier = nn.Linear(in_features, self.num_class)
 
     def forward(self, x):
         x = self.model(x)
-        #x = self.pooling(x).flatten(1)
-        #x = self.classifier(x)
+        # x = self.pooling(x).flatten(1)
+        # x = self.classifier(x)
 
         return x
+
 
 def init_weights_xavier(model):
     if isinstance(model, nn.Conv2d) or isinstance(model, nn.Linear):
@@ -310,13 +300,12 @@ def init_weights_xavier(model):
             nn.init.zeros_(model.bias)
 
 
-
 class UBCModel_init(nn.Module):
     def __init__(self, model_name, weights_path):
         super(UBCModel_init, self).__init__()
         self.model_ = timm.create_model(
             model_name=model_name,
-            pretrained=None
+            pretrained=False
         )
         self.model_.load_state_dict(torch.load(weights_path))
         self.pooling = GeM()
@@ -327,13 +316,15 @@ class UBCModel_init(nn.Module):
         x = self.pooling(x)
         return self.classifier(x)
 
+
 # 训练
 
-if use_init_weights:
-    model = UBCModel_init(timm_model_name, weights_path)
-else:
-    model = UBCModel(timm_model_name)
+# if use_init_weights:
+#    model = UBCModel_init(timm_model_name, weights_path)
+# else:
+#    model = UBCModel(timm_model_name)
 
+model = mobilevit_xs()
 
 if use_xavier_init:
     model.apply(init_weights_xavier)
@@ -345,11 +336,12 @@ class FocalLoss(nn.Module):
         self.alpha = alpha
         self.gamma = gamma
         self.reduction = reduction
+
     def forward(self, input, target):
         ce_loss = nn.CrossEntropyLoss(reduction='none')(input, target)
         pt = torch.exp(-ce_loss)
-        ft = self.alpha * (1 -pt) ** self.gamma
-        focal_loss = ft*ce_loss
+        ft = self.alpha * (1 - pt) ** self.gamma
+        focal_loss = ft * ce_loss
 
         if self.reduction == 'mean':
             return torch.mean(focal_loss)
@@ -359,8 +351,6 @@ class FocalLoss(nn.Module):
             return focal_loss
 
 
-
-
 model = model.to('cuda')
 # model.load_state_dict(torch.load(init_weigth))
 
@@ -368,7 +358,7 @@ loss_fn = nn.CrossEntropyLoss()
 
 # moblienet_s 100epochs lr=0.00001
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1/(epoch + 1))
+lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 1 / (epoch + 1))
 
 num_epochs = epoch_num
 
@@ -397,7 +387,6 @@ logger.info(f'backbone: {timm_model_name}, '
             f'use_init_weights {use_init_weights}，'
             f'weight_decay {weight_decay}'
             )
-
 
 '''
 for epoch in range(num_epochs):
@@ -442,6 +431,7 @@ for epoch in range(num_epochs):
                 print(f'Epoch: {epoch}, Accuracy: {100 * correct / total}%, balance accuracy: {balanced_accuracy * 100}%')
                 logger.info(f'Epoch: {epoch}, Accuracy: {100 * correct / total}%, balance accuracy: {balanced_accuracy * 100}%')
 '''
+
 
 def train():
     for epoch in range(num_epochs):

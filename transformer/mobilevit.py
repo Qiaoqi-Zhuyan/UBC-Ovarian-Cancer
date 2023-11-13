@@ -2,13 +2,13 @@
 copy from https://github.com/chinhsuanwu/mobilevit-pytorch/blob/master/mobilevit.py
 '''
 
-
-
 import torch
 from torch import nn
 import einops
+import torch.nn.functional as F
 
 x = torch.randn(1, 3, 224, 224)
+
 
 class conv_1x1_bn(nn.Module):
     def __init__(self, in_channel, out_channel):
@@ -72,7 +72,7 @@ class Attention(nn.Module):
 
     def forward(self, x):
         qkv = self.to_qkv(x).chunk(3, dim=-1)
-        q, k, v = map(lambda t: einops.rearrange(t, 'b p n (h d) -> b p h n d', h = self.heads), qkv)
+        q, k, v = map(lambda t: einops.rearrange(t, 'b p n (h d) -> b p h n d', h=self.heads), qkv)
         dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
 
         attn = self.attn(dots)
@@ -82,6 +82,7 @@ class Attention(nn.Module):
 
         out = einops.rearrange(out, 'b p h n d -> b p n (h d)')
         return self.out(out)
+
 
 class Transformer(nn.Module):
     def __init__(self, in_channel, depth, heads, head_dim, hidden_dim, attn_drop=0.0, ffn_drop=0.0):
@@ -106,14 +107,13 @@ class Transformer(nn.Module):
                 self.ffn
             ]))
 
-
     def forward(self, x):
         for attn, ffn in self.layers:
-
             x = attn(x) + x
             x = ffn(x) + x
 
         return x
+
 
 class MV2Block(nn.Module):
     def __init__(self, in_channel, out_channel, stride=1, expansion=4):
@@ -180,15 +180,16 @@ class MV2Block(nn.Module):
             x = self.conv3(x)
             x = self.bn3(x)
 
-            #print(f'res shape: {res.shape}')
-            #print(f'x shape: {x.shape}')
+            # print(f'res shape: {res.shape}')
+            # print(f'x shape: {x.shape}')
 
             if self.use_res_connect:
-                #print(f"x + res: {(x + res).shape}")
+                # print(f"x + res: {(x + res).shape}")
                 return x + res
             else:
-                #print(f'x: {x.shape}')
+                # print(f'x: {x.shape}')
                 return x
+
 
 class MobileVitBlock(nn.Module):
     def __init__(self, dim, depth, channel, kernel_size, patch_size, hidden_dim, attn_drop=0.0, ffn_drop=0.0):
@@ -212,20 +213,40 @@ class MobileVitBlock(nn.Module):
 
         # global representations
         _, _, h, w = x.shape
-        #print(f'x shape : {x.shape}')
+        # print(f'x shape : {x.shape}')
         x = einops.rearrange(x, 'b d (h ph) (w pw) -> b (ph pw) (h w) d', ph=self.ph, pw=self.pw)
         x = self.transformer(x)
-        x = einops.rearrange(x, 'b (ph pw) (h w) d -> b d (h ph) (w pw)', h=h//self.ph, w=w//self.pw, ph=self.ph, pw=self.pw)
+        x = einops.rearrange(x, 'b (ph pw) (h w) d -> b d (h ph) (w pw)', h=h // self.ph, w=w // self.pw, ph=self.ph,
+                             pw=self.pw)
 
         # fusion
         x = self.conv3(x)
-        #print(f'x shape {x.shape}')
-        #print(f'y shape {y.shape}')
+        # print(f'x shape {x.shape}')
+        # print(f'y shape {y.shape}')
 
         x = torch.cat((x, y), dim=1)
         x = self.conv4(x)
 
         return x
+
+
+class GeM(nn.Module):
+    def __init__(self, p=3, eps=1e-6):
+        super(GeM, self).__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)
+        self.eps = eps
+
+    def forward(self, x):
+        return self.gem(x, p=self.p, eps=self.eps)
+
+    def gem(self, x, p=3, eps=1e-6):
+        return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1. / p)
+
+    def __repr__(self):
+        return self.__class__.__name__ + \
+               '(' + 'p=' + '{:.4f}'.format(self.p.data.tolist()[0]) + \
+               ', ' + 'eps=' + str(self.eps) + ')'
+
 
 class MobileVit(nn.Module):
     def __init__(self, img_size, dims, channels, num_classes, expansion=4, kernel_size=3, patch_size=(2, 2)):
@@ -257,6 +278,7 @@ class MobileVit(nn.Module):
         self.conv2 = conv_1x1_bn(channels[-2], channels[-1])
 
         self.avg_pool = nn.AvgPool2d(ih // 32, 1)
+        self.gem_pool = GeM()
         self.fc = nn.Linear(channels[-1], num_classes, bias=False)
 
     def forward(self, x):
@@ -277,10 +299,11 @@ class MobileVit(nn.Module):
         x = self.mvit[2](x)
         x = self.conv2(x)
 
-        x = self.avg_pool(x).view(-1, x.shape[1])
+        x = self.gem_pool(x).view(-1, x.shape[1])
         x = self.fc(x)
 
         return x
+
 
 def mobilevit_xxs():
     dims = [64, 80, 96]
@@ -291,7 +314,7 @@ def mobilevit_xxs():
 def mobilevit_xs():
     dims = [96, 120, 144]
     channels = [16, 32, 48, 48, 64, 64, 80, 80, 96, 96, 384]
-    return MobileVit((512, 512), dims, channels, num_classes=1000)
+    return MobileVit((512, 512), dims, channels, num_classes=5)
 
 
 def mobilevit_s():
@@ -299,8 +322,10 @@ def mobilevit_s():
     channels = [16, 32, 64, 64, 96, 96, 128, 128, 160, 160, 640]
     return MobileVit((512, 512), dims, channels, num_classes=1000)
 
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
 
 if __name__ == "__main__":
     x = torch.randn(1, 3, 512, 512)
@@ -320,4 +345,3 @@ if __name__ == "__main__":
     y = model(x)
     print(y.shape)
     print(count_parameters(model))
-

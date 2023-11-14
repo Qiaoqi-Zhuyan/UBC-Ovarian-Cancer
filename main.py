@@ -21,7 +21,7 @@ import logging
 import datetime
 
 from tqdm import tqdm
-from transformer.mobilevit import mobilevit_xs
+from transformer.mobilevit import mobilevit_xs, mobilevit_xxs, mobilevit_s
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -29,26 +29,28 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 img_path = "/root/autodl-tmp/train_thumbnails"
 csv_path = "/root/autodl-tmp/train.csv"
 
+use_aug_dataset = True
 aug_img_path = {
     "origin-imgs": "/root/autodl-tmp/train_thumbnails",
-    "augs-imgs": "/root/autodl-tmp/train_thumbnails_augs"
+    "augs-imgs": "/root/autodl-tmp/train_thumbnails_augs/train_thumbnails_augs"
 }
 
 use_init_weights = False
 weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
 
 epoch_num = 50
-timm_model_name = "mobilevit_xs"
-# logger_name = "training38.log"
-version = 3
+timm_model_name = "mobilevit_s"
+logger_name = "training40.log"
+version = 1
 batch_size = 16
 lr = 1e-5
 img_size = (512, 512)
 use_xavier_init = False
 weight_decay = 1e-4
 
-logger_name = f"{timm_model_name}-{datetime.date.today()}-ver{version}.log"
+#logger_name = f"{timm_model_name}-{datetime.date.today()}-ver{version}.log"
 save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
+
 
 # label transform
 label_str2int = {
@@ -226,8 +228,10 @@ transforms = transforms.Compose(
     ]
 )
 
-# ubc_dataset = UBCDataset(csv_path , img_path, transforms)
-ubc_dataset = UBCDataset_augs(csv_path, aug_img_path, transforms)
+if use_aug_dataset:
+    ubc_dataset = UBCDataset_augs(csv_path, aug_img_path, transforms)
+else:
+    ubc_dataset = UBCDataset(csv_path , img_path, transforms)
 
 train_len = int(len(ubc_dataset) * 0.8)
 val_len = len(ubc_dataset) - train_len
@@ -240,14 +244,16 @@ train_dataloader = DataLoader(
     dataset=train_dataset,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=0,
+    num_workers=4,
+    pin_memory=True
 )
 
 val_dataloader = DataLoader(
     dataset=val_dataset,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=0
+    num_workers=4,
+    pin_memory=True
 )
 
 
@@ -319,12 +325,12 @@ class UBCModel_init(nn.Module):
 
 # 训练
 
-# if use_init_weights:
+#if use_init_weights:
 #    model = UBCModel_init(timm_model_name, weights_path)
-# else:
+#else:
 #    model = UBCModel(timm_model_name)
 
-model = mobilevit_xs()
+model = mobilevit_s()
 
 if use_xavier_init:
     model.apply(init_weights_xavier)
@@ -369,8 +375,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler(logger_name),
-        logging.StreamHandler()
+        logging.FileHandler(logger_name)
     ]
 )
 
@@ -387,7 +392,7 @@ logger.info(f'backbone: {timm_model_name}, '
             f'use_init_weights {use_init_weights}，'
             f'weight_decay {weight_decay}'
             )
-
+logging.basicConfig(stream=None)
 '''
 for epoch in range(num_epochs):
     for batch, (x, y) in enumerate(train_dataloader):
@@ -441,7 +446,7 @@ def train():
         train_loss_sum = 0
 
         model.train()
-        with tqdm(train_dataloader, unit="batch") as t:
+        with tqdm(train_dataloader, desc='Train') as t:
             for x, y in t:
                 t.set_description(f"Epoch [{epoch} / {epoch_num}]")
                 x = x.to('cuda')
@@ -458,7 +463,7 @@ def train():
                     y_ = torch.argmax(y_pred, dim=1)
                     train_correct += (y_ == y).sum().item()
                     train_total += y.size(0)
-                    train_loss_sum += loss.item
+                    train_loss_sum += loss.item()
                     training_loss = train_loss_sum / train_total
                     training_acc = train_correct / train_total
 
@@ -474,12 +479,12 @@ def train():
                             f'Training Balanced Accuracy: {training_balanced_accuracy}')
                 torch.save(model, save_model_name)
 
-                val_correct = 0
-                val_total = 0
+            val_correct = 0
+            val_total = 0
 
-                model.eval()
-                with torch.no_grad():
-                    t2 = tqdm(val_dataloader, desc="Val")
+            model.eval()
+            with torch.no_grad():
+                with tqdm(val_dataloader, desc="Val") as t2:
                     for x, y in t2:
                         x = x.to('cuda')
                         y = y.to('cuda')

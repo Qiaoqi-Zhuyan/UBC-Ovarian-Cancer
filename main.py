@@ -22,6 +22,12 @@ import datetime
 
 from tqdm import tqdm
 from transformer.mobilevit import mobilevit_xs, mobilevit_xxs, mobilevit_s
+#from cnn.convNext import convnext_small, convnext_tiny
+from cnn.convNext_official import convnext_tiny, UBC_ConvNext_tiny
+import warnings
+
+
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -40,17 +46,21 @@ weights_path = "/root/autodl-tmp/ovarian-caner-ubc/mobilevit_s-38a5a959.pth"
 
 epoch_num = 50
 timm_model_name = "mobilevit_s"
-logger_name = "training40.log"
-version = 1
+version = 2
 batch_size = 16
-lr = 1e-5
-img_size = (512, 512)
+lr = 1e-4
+img_size = (224, 224)
 use_xavier_init = False
 weight_decay = 1e-4
 
+model = convnext_tiny(num_classes=5, pretrained=False)
 #logger_name = f"{timm_model_name}-{datetime.date.today()}-ver{version}.log"
-save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
+#save_model_name = f"{timm_model_name}-{datetime.date.today()}-epoch{epoch_num}-init-ver3.pt"
+backbone = "convnext_tiny"
+save_model_name = f"{backbone}--{datetime.date.today()}--epoch{epoch_num}-ver{version}.pt"
+logger_name = f"{backbone}--{datetime.date.today()}--epoch{epoch_num}-ver{version}.log"
 
+warnings.filterwarnings("ignore")
 
 # label transform
 label_str2int = {
@@ -86,7 +96,7 @@ class UBCDataset(Dataset):
         self.imgs = []
         self.labels = []
 
-        for idx, row in self.df.iterrows():
+        for idx, row in tqdm(self.df.iterrows()):
             img_id = row['image_id']
             is_tma = row['is_tma']
             label = row["label"]
@@ -330,7 +340,7 @@ class UBCModel_init(nn.Module):
 #else:
 #    model = UBCModel(timm_model_name)
 
-model = mobilevit_s()
+
 
 if use_xavier_init:
     model.apply(init_weights_xavier)
@@ -381,7 +391,7 @@ logging.basicConfig(
 
 logger = logging.getLogger('training_logger')
 
-logger.info(f'backbone: {timm_model_name}, '
+logger.info(f'backbone: {backbone}, '
             f'logger: {logger_name}, '
             f'batch_size: {batch_size}, '
             f'epochs: {epoch_num},'
@@ -391,6 +401,7 @@ logger.info(f'backbone: {timm_model_name}, '
             f'transforms: {transforms},'
             f'use_init_weights {use_init_weights}，'
             f'weight_decay {weight_decay}'
+            f'use augs_datase: {use_aug_dataset}'
             )
 logging.basicConfig(stream=None)
 '''

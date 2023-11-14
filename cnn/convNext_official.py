@@ -212,6 +212,23 @@ def convnext_xlarge(pretrained=False, in_22k=False, **kwargs):
         model.load_state_dict(checkpoint["model"])
     return model
 
+from transformer.mobilevit import GeM
+
+class UBC_ConvNext_tiny(nn.Module):
+    def __init__(self, num_classes=5, pretrained=True):
+        super(UBC_ConvNext_tiny, self).__init__()
+        self.convnext = convnext_tiny(pretrained)
+        self.head = nn.Linear(1000, 5)
+        self.gem_pool = GeM()
+    def forward(self, x):
+        x = self.convnext(x)
+        return self.head(x)
+
+"""@register_model
+def ubc_convnext_tiny( num_classes=5, pretrained=True):
+    model = UBC_ConvNext_tiny(num_classes=num_classes, pretrained=pretrained)
+    return model"""
+
 if __name__ == "__main__":
     x = torch.randn(1, 3, 224, 224)
     b = Block(dim=3)

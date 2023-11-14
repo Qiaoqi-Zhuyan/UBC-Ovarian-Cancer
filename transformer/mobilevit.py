@@ -190,14 +190,14 @@ class MV2Block(nn.Module):
 
 
 class MobileVitBlock(nn.Module):
-    def __init__(self, dim, depth, channel, kernel_size, patch_size, hidden_dim, attn_drop=0.0, ffn_drop=0.0):
+    def __init__(self, dim, depth, channel, kernel_size, patch_size, hidden_dim, attn_drop=0.5, ffn_drop=0.5):
         super(MobileVitBlock, self).__init__()
         self.ph, self.pw = patch_size
 
         self.conv1 = conv_nxn_bn(channel, channel, kernel_size)
         self.conv2 = conv_1x1_bn(channel, dim)
 
-        self.transformer = Transformer(dim, depth, 4, 8, hidden_dim, attn_drop)
+        self.transformer = Transformer(dim, depth, 4, 8, hidden_dim, attn_drop=attn_drop, ffn_drop=ffn_drop)
 
         self.conv3 = conv_1x1_bn(dim, channel)
         self.conv4 = conv_nxn_bn(2 * channel, channel, kernel_size)

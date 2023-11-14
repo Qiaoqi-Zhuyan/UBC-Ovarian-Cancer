@@ -216,7 +216,7 @@
       <workItem from="1699769635682" duration="2542000" />
       <workItem from="1699781118262" duration="906000" />
       <workItem from="1699789218770" duration="17024000" />
-      <workItem from="1699855771330" duration="43450000" />
+      <workItem from="1699855771330" duration="67383000" />
     </task>
     <servers />
   </component>
@@ -249,6 +249,6 @@
     <SUITE FILE_PATH="coverage/mobilevit_py$mobilevit.coverage" NAME="mobilevit Coverage Results" MODIFIED="1699885067888" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/transformer" />
     <SUITE FILE_PATH="coverage/mobilevit_py$coatnet.coverage" NAME="coatnet Coverage Results" MODIFIED="1699187615322" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/transformer" />
     <SUITE FILE_PATH="coverage/UBC_Ovarian_Cancer$coatnet.coverage" NAME="coatnet Coverage Results" MODIFIED="1698762483804" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/transformer" />
-    <SUITE FILE_PATH="coverage/mobilevit_py$convNext.coverage" NAME="convNext Coverage Results" MODIFIED="1699945541882" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cnn" />
+    <SUITE FILE_PATH="coverage/mobilevit_py$convNext.coverage" NAME="convNext Coverage Results" MODIFIED="1699951915401" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/cnn" />
   </component>
 </project>

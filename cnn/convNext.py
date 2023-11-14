@@ -138,7 +138,7 @@ class ConvNext(nn.Module):
     layer_scale_init_value=1e-6: init value for layer scale
     head_init_scale=1: Init scaling value for classifier weights and biases
     '''
-    def __init__(self, in_channel=3, num_classes=1000, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.0, layer_scale_init_value=1e-6, head_init_scale=1.,):
+    def __init__(self, in_channel=3, num_classes=5, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.0, layer_scale_init_value=1e-6, head_init_scale=1.,):
         super(ConvNext, self).__init__()
         self.downsample = nn.ModuleList()
 
@@ -196,11 +196,14 @@ def convnext_tiny(**kwargs):
     model = ConvNext(depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], **kwargs)
     return model
 
-
+def convnext_small(**kwargs):
+    model = ConvNext(depths=[3, 3, 27, 3], dims=[96, 192, 384, 768], **kwargs)
+    return model
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+# num_parameters = sum(torch.numel(parameter) for parameter in model.parameters())
 
 
 if __name__ == "__main__":
@@ -208,4 +211,10 @@ if __name__ == "__main__":
     model = convnext_tiny(num_classes=5)
     y = model(x)
     print(y.shape)
+    print(f'convnext_tiny: {count_parameters(model)}')
+    from transformer.mobilevit import mobilevit_s
+    model_ = mobilevit_s()
+    print(f'mobilevit_s: {count_parameters(model_)}')
 
+    model_small = convnext_small(num_classes=5)
+    print(f'convnext_small: {count_parameters(model_small)}')

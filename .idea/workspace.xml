@@ -71,7 +71,7 @@
       <recent name="E:\UBC-Ovarian-Cancer\UBC-Ovarian-Cancer\cnn" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.convNext">
+  <component name="RunManager" selected="Python.metaformer">
     <configuration name="convNext" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="UBC-Ovarian-Cancer" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -138,6 +138,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="metaformer" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="UBC-Ovarian-Cancer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/transformer" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/transformer/metaformer.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="mobilevit" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="UBC-Ovarian-Cancer" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -160,35 +182,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="mobilevit_chin" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="UBC-Ovarian-Cancer" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/transformer" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/transformer/mobilevit_chin.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.metaformer" />
         <item itemvalue="Python.convNext" />
         <item itemvalue="Python.convNext_official" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.mobilevit" />
-        <item itemvalue="Python.mobilevit_chin" />
       </list>
     </recent_temporary>
   </component>
@@ -216,7 +216,9 @@
       <workItem from="1699769635682" duration="2542000" />
       <workItem from="1699781118262" duration="906000" />
       <workItem from="1699789218770" duration="17024000" />
-      <workItem from="1699855771330" duration="67383000" />
+      <workItem from="1699855771330" duration="68240000" />
+      <workItem from="1700014867554" duration="16738000" />
+      <workItem from="1700093620760" duration="6383000" />
     </task>
     <servers />
   </component>
@@ -242,6 +244,7 @@
     <SUITE FILE_PATH="coverage/UBC_Ovarian_Cancer$coatnet_test.coverage" NAME="coatnet_test Coverage Results" MODIFIED="1698754463658" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/transformer" />
     <SUITE FILE_PATH="coverage/mobilevit_py$img_aug.coverage" NAME="img-aug Coverage Results" MODIFIED="1699813452221" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mobilevit_py$main.coverage" NAME="main Coverage Results" MODIFIED="1699895548256" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/mobilevit_py$metaformer.coverage" NAME="metaformer Coverage Results" MODIFIED="1700117544534" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/transformer" />
     <SUITE FILE_PATH="coverage/UBC_Ovarian_Cancer$main__1_.coverage" NAME="main (1) Coverage Results" MODIFIED="1698642323743" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/UBC_Ovarian_Cancer$mobilevit.coverage" NAME="mobilevit Coverage Results" MODIFIED="1698860866140" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/transformer" />
     <SUITE FILE_PATH="coverage/UBC_Ovarian_Cancer$timm_models.coverage" NAME="timm_models Coverage Results" MODIFIED="1698838480116" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

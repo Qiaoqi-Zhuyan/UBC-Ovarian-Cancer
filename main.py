@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import timm
+from timm.utils import accuracy
 
 import torchvision.transforms as transforms
 from sklearn.metrics import balanced_accuracy_score
@@ -23,7 +24,7 @@ import datetime
 from tqdm import tqdm
 from transformer.mobilevit import mobilevit_xs, mobilevit_xxs, mobilevit_s
 #from cnn.convNext import convnext_small, convnext_tiny
-from cnn.convNext_official import convnext_tiny, UBC_ConvNext_tiny
+from cnn.convNext_official_impl import convnext_tiny, UBC_ConvNext_tiny
 import warnings
 
 
@@ -460,8 +461,8 @@ def train():
         with tqdm(train_dataloader, desc='Train') as t:
             for x, y in t:
                 t.set_description(f"Epoch [{epoch} / {epoch_num}]")
-                x = x.to('cuda')
-                y = y.to('cuda')
+                x = x.to('cuda', non_blocking=True)
+                y = y.to('cuda', non_blocking=True)
 
                 y_pred = model(x)
                 loss = loss_fn(y_pred, y)
@@ -497,8 +498,8 @@ def train():
             with torch.no_grad():
                 with tqdm(val_dataloader, desc="Val") as t2:
                     for x, y in t2:
-                        x = x.to('cuda')
-                        y = y.to('cuda')
+                        x = x.to('cuda', non_blocking=True)
+                        y = y.to('cuda', non_blocking=True)
                         y_p = model(x)
                         # _, pred = torch.max(y_p, 1)
                         pred = torch.argmax(y_p, dim=1)
@@ -519,11 +520,37 @@ def train():
                                     f'val Balanced Accuracy: {balanced_accuracy}')
 
 
-def orig_dataset_test():
-    pass
+def orig_dataset_test(test_dataset):
+    test_correct = 0
+    test_total = 0
+
+    model.eval(True)
+    with torch.no_grad():
+        with tqdm(test_dataset, desc="test") as t:
+            for x, y in t:
+                x = x.to('cuda', non_blocking=True)
+                y = y.to('cuda', non_blocking=True)
+                y_p = model(x)
+                # _, pred = torch.max(y_p, 1)
+                pred = torch.argmax(y_p, dim=1)
+
+                #val_total += y.size(0)
+                #val_correct += (pred == y).sum().item()
+                #val_acc = '{:.4f}'.format(val_correct / val_total)
+                test_acc = '{:.4f}'.format(accuracy(pred, y))
+
+                y = y.to('cpu')
+                pred = pred.to('cpu')
+                test_balanced_accuracy = '{:.4f}'.format(balanced_accuracy_score(y, pred))
+
+                t.set_postfix(test_acc=test_acc, test_BA=test_balanced_accuracy)
+
+                logger.info(f'test:'
+                            f'Val Accuracy: {test_acc},'
+                            f'val Balanced Accuracy: {test_balanced_accuracy}')
 
 
 if __name__ == "__main__":
     train()
     orig_dataset_test()
-    
+    orig_dataset_test()
